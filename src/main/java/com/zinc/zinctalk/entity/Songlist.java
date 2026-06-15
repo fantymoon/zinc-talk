@@ -1,5 +1,7 @@
 package com.zinc.zinctalk.entity;
 
+import java.time.LocalDateTime;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
@@ -14,6 +16,8 @@ public class Songlist {
     private Long id;
     private Long ownerId;
     private String name;
+    private LocalDateTime updateTime;
+    private LocalDateTime createTime;
 
     @TableLogic
     private Boolean isDeleted;

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data
 @TableName("t_user")
@@ -17,6 +18,9 @@ public class User {
     private String sex;
     private String avatar;
     private String selfIntroduction;
+    private String password;
+    private LocalDateTime updateTime;
+    private LocalDateTime createTime;
 
     @TableLogic
     private Boolean isDeleted;

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data
 @TableName("t_song")
@@ -17,6 +18,7 @@ public class Song {
     private String artist;
     private Integer duration;
     private String url;
+    private LocalDateTime createTime;
 
     @TableLogic
     private Boolean isDeleted;

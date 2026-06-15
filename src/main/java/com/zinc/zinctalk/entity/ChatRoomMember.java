@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data
 @TableName("t_chat_room_member")
@@ -15,7 +16,8 @@ public class ChatRoomMember {
     private Long roomId;
     private String role;
     private Long userId;
+    private LocalDateTime createTime;
 
     @TableLogic
     private Boolean isDeleted;
- }
+}

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data
 @TableName("t_friend")
@@ -14,7 +15,10 @@ public class Friend {
     private Long id;
     private Long userId;    
     private Long friendId;
+    private Integer status;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
 
     @TableLogic
     private Boolean isDeleted;
- }
+}

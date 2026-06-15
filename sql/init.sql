@@ -1,0 +1,73 @@
+CREATE DATABASE IF NOT EXISTS zinc_talk;
+USE zinc_talk;
+
+CREATE TABLE IF NOT EXISTS t_user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    account VARCHAR(10) NOT NULL UNIQUE COMMENT '账号',
+    password VARCHAR(255) NOT NULL COMMENT '密码',
+    nickname VARCHAR(50) NOT NULL COMMENT '昵称',
+    sex VARCHAR(5) NOT NULL COMMENT '性别',
+    avatar VARCHAR(255) DEFAULT '' COMMENT '头像',
+    self_introduction TEXT COMMENT '个人介绍',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT '用户表';
+
+CREATE TABLE t_friend (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    friend_id BIGINT NOT NULL COMMENT '好友ID',
+    status TINYINT DEFAULT 0 COMMENT '状态 0待验证 1已同意 2已拒绝',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY uk_user_friend (user_id, friend_id)
+) COMMENT '好友关系表';
+
+CREATE TABLE t_chat_room (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    owner_id BIGINT NOT NULL COMMENT '创建者ID',
+    name VARCHAR(100) DEFAULT '' COMMENT '群聊名称 私聊为空',
+    type TINYINT NOT NULL COMMENT '类型 1私聊 2群聊',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+) COMMENT '聊天室表';
+
+CREATE TABLE t_chat_room_member (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    room_id BIGINT NOT NULL COMMENT '聊天室ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    role TINYINT DEFAULT 0 COMMENT '0普通成员 1管理员 2群主',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY uk_room_user (room_id, user_id)
+) COMMENT '聊天室成员表';
+
+CREATE TABLE t_message (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    sender_id BIGINT NOT NULL COMMENT '发送者ID',
+    room_id BIGINT NOT NULL COMMENT '聊天室ID',
+    content TEXT NOT NULL COMMENT '消息内容',
+    send_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    INDEX idx_room_time (room_id, send_time)
+) COMMENT '消息表';
+
+CREATE TABLE t_songlist (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    owner_id BIGINT NOT NULL COMMENT '创建者ID',
+    name VARCHAR(100) NOT NULL COMMENT '歌单名称',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT '歌单表';
+
+CREATE TABLE t_song (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    songlist_id BIGINT NOT NULL COMMENT '所属歌单ID',
+    name VARCHAR(200) NOT NULL COMMENT '歌曲名',
+    artist VARCHAR(100) DEFAULT '' COMMENT '歌手',
+    duration INT DEFAULT 0 COMMENT '时长（秒）',
+    url VARCHAR(500) NOT NULL COMMENT '音乐文件路径',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+) COMMENT '歌曲表';
