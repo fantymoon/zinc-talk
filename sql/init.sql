@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS t_user (
     account VARCHAR(10) NOT NULL UNIQUE COMMENT '账号',
     password VARCHAR(255) NOT NULL COMMENT '密码',
     nickname VARCHAR(50) NOT NULL COMMENT '昵称',
-    sex VARCHAR(5) NOT NULL COMMENT '性别',
+    sex VARCHAR(5) NOT NULL DEFAULT '' COMMENT '性别',
     avatar VARCHAR(255) DEFAULT '' COMMENT '头像',
     self_introduction TEXT COMMENT '个人介绍',
     is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
