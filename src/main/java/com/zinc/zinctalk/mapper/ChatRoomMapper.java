@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface ChatRoomMapper extends BaseMapper<ChatRoom> {
 
@@ -15,4 +17,8 @@ public interface ChatRoomMapper extends BaseMapper<ChatRoom> {
             "WHERE r.type = 1 AND r.is_deleted = 0 " +
             "LIMIT 1")
     Long selectPrivateRoomId(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+
+    @Select("SELECT DISTINCT room_id FROM t_chat_room_member " +
+            "WHERE user_id = #{userId} AND is_deleted = 0")
+    List<Long> selectRoomIdsByUserId(@Param("userId") Long userId);
 }
