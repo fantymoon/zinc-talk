@@ -21,7 +21,8 @@ CREATE TABLE t_friend (
     status TINYINT DEFAULT 0 COMMENT '状态 0待验证 1已同意 2已拒绝',
     is_deleted TINYINT(1) DEFAULT 0 COMMENT '0未删除 1已删除',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    UNIQUE KEY uk_user_friend (user_id, friend_id)
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+    UNIQUE KEY uk_user_friend (user_id, friend_id,is_deleted)
 ) COMMENT '好友关系表';
 
 CREATE TABLE t_chat_room (
