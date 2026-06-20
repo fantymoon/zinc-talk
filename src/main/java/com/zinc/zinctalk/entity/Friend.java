@@ -19,6 +19,6 @@ public class Friend {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    @TableLogic
+    @TableLogic(value = "0", delval = "1")
     private Boolean isDeleted;
 }

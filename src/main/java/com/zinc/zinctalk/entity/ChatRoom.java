@@ -1,6 +1,5 @@
 package com.zinc.zinctalk.entity;
 
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -19,7 +18,6 @@ public class ChatRoom {
     private Integer type;
     private LocalDateTime createTime;
 
-    @TableLogic
     private Boolean isDeleted;
 
     @TableField(exist = false)

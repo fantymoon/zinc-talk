@@ -3,7 +3,6 @@ package com.zinc.zinctalk.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
@@ -19,9 +18,11 @@ public class ChatRoomMember {
     private Long userId;
     private LocalDateTime createTime;
 
-    @TableLogic
     private Boolean isDeleted;
 
     @TableField(exist = false)
     private String nickname;
+
+    @TableField(exist = false)
+    private String avatar;
 }

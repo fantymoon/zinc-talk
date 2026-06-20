@@ -236,7 +236,7 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
             .eq(ChatRoomMember::getIsDeleted, 0);
         List<ChatRoomMember> members = chatRoomMemberMapper.selectList(wrapper);
 
-        fillMemberNicknames(members);
+        fillMemberProfiles(members);
 
         return Result.success(members);
     }
@@ -294,16 +294,22 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
         }
     }
 
-    //给成员列表批量填充昵称
-    private void fillMemberNicknames(List<ChatRoomMember> members) {
+    //给成员列表批量填充昵称和头像
+    private void fillMemberProfiles(List<ChatRoomMember> members) {
         if (members == null || members.isEmpty()) return;
         List<Long> ids = members.stream()
             .map(ChatRoomMember::getUserId)
             .distinct()
             .collect(Collectors.toList());
-        Map<Long, String> nameMap = userMapper.selectBatchIds(ids).stream()
-            .collect(Collectors.toMap(User::getId, User::getNickname, (a, b) -> a));
-        members.forEach(m -> m.setNickname(nameMap.get(m.getUserId())));
+        Map<Long, User> userMap = userMapper.selectBatchIds(ids).stream()
+            .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+        members.forEach(m -> {
+            User u = userMap.get(m.getUserId());
+            if (u != null) {
+                m.setNickname(u.getNickname());
+                m.setAvatar(u.getAvatar());
+            }
+        });
     }
 
     //检查所有成员是否为好友

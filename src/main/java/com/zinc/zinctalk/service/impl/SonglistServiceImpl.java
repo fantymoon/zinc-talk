@@ -3,8 +3,10 @@ package com.zinc.zinctalk.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zinc.zinctalk.common.Result;
+import com.zinc.zinctalk.entity.Song;
 import com.zinc.zinctalk.entity.Songlist;
 import com.zinc.zinctalk.mapper.SonglistMapper;
+import com.zinc.zinctalk.mapper.SongMapper;
 import com.zinc.zinctalk.service.SonglistService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,9 @@ public class SonglistServiceImpl extends ServiceImpl<SonglistMapper, Songlist> i
 
     @Autowired
     private SonglistMapper songlistMapper;
+
+    @Autowired
+    private SongMapper songMapper;
 
     //创建歌单
     @Override
@@ -75,6 +80,11 @@ public class SonglistServiceImpl extends ServiceImpl<SonglistMapper, Songlist> i
         if (!songlist.getOwnerId().equals(userId)) {
             return Result.fail("不能删除别人的歌单");
         }
+
+        // 级联删除歌单下的所有歌曲（物理删除）
+        LambdaQueryWrapper<Song> songWrapper = new LambdaQueryWrapper<>();
+        songWrapper.eq(Song::getSonglistId, songlistId);
+        songMapper.delete(songWrapper);
 
         removeById(songlistId);
 
