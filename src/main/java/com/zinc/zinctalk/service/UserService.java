@@ -19,4 +19,6 @@ public interface UserService extends IService<User> {
 
     Result<String> updatePassword(Long userId, String oldPassword, String newPassword);
 
+    Result<User> uploadAvatar(Long userId, org.springframework.web.multipart.MultipartFile file);
+
 }

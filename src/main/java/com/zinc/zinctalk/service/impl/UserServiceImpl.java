@@ -9,16 +9,24 @@ import com.zinc.zinctalk.service.UserService;
 import com.zinc.zinctalk.util.JwtUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Value("${app.upload-dir}")
+    private String uploadDir;
 
     //注册
     @Override
@@ -159,6 +167,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setPassword(newPassword);
         updateById(user);
         return Result.success("密码修改成功");
+    }
+
+    @Override
+    public Result<User> uploadAvatar(Long userId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return Result.fail("请选择头像文件");
+        }
+
+        String originalName = file.getOriginalFilename();
+        String ext = "";
+        if (originalName != null && originalName.contains(".")) {
+            ext = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+        }
+
+        if (!ext.matches("\\.(jpg|jpeg|png|gif|webp)")) {
+            return Result.fail("仅支持 jpg、jpeg、png、gif、webp 格式的图片");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return Result.fail("头像文件大小不能超过 5MB");
+        }
+
+        String newFileName = UUID.randomUUID().toString().replace("-", "") + ext;
+        File dest = new File(uploadDir + File.separator + "avatar" + File.separator + newFileName);
+        if (!dest.getParentFile().exists()) {
+            dest.getParentFile().mkdirs();
+        }
+
+        try {
+            file.transferTo(dest.getAbsoluteFile());
+        } catch (IOException e) {
+            return Result.fail("头像上传失败：" + e.getMessage());
+        }
+
+        User user = getById(userId);
+        if (user == null) {
+            return Result.fail("用户不存在");
+        }
+
+        String url = "/uploads/avatar/" + newFileName;
+        user.setAvatar(url);
+        updateById(user);
+        user.setPassword(null);
+        return Result.success(user);
     }
 
 }
