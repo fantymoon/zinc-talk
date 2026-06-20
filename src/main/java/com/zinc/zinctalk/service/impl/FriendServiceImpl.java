@@ -53,6 +53,11 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             return Result.fail("不能添加自己为好友");
         }
 
+        //校验目标用户是否存在
+        if (userMapper.selectById(friendId) == null) {
+            return Result.fail("用户不存在");
+        }
+
         LambdaQueryWrapper<Friend> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Friend::getUserId, userId)
             .eq(Friend::getFriendId, friendId);
