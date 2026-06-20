@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface MessageService extends IService<Message> {
     Result<Message> saveMessage(Long senderId, Long roomId, String content);
+    Result<Message> saveShareMessage(Long senderId, Long roomId, Integer type, String extra);
     Result<List<Message>> getHistoryMessages(Long roomId, Long userId);
 }

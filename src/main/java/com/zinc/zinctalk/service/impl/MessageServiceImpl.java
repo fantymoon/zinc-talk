@@ -48,6 +48,28 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         return Result.success(message);
     }
 
+    //保存分享消息
+    @Override
+    public Result<Message> saveShareMessage(Long senderId, Long roomId, Integer type, String extra) {
+        if (type == null) {
+            return Result.fail("消息类型不能为空");
+        }
+        if (!isRoomMember(roomId, senderId)) {
+            return Result.fail("不在该聊天室中");
+        }
+
+        Message message = new Message();
+        message.setSenderId(senderId);
+        message.setRoomId(roomId);
+        message.setType(type);
+        message.setExtra(extra);
+        message.setContent(type == 1 ? "[好友推荐]" : "[分享]");
+        message.setSendTime(LocalDateTime.now());
+        save(message);
+
+        return Result.success(message);
+    }
+
     //获取历史消息
     @Override
     public Result<List<Message>> getHistoryMessages(Long roomId, Long userId) {
@@ -60,7 +82,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
             .orderByAsc(Message::getSendTime);
         List<Message> messages = list(wrapper);
 
-        //批量填充发送者昵称
+        //批量填充发送者昵称+好友推荐卡片信息
         if (!messages.isEmpty()) {
             List<Long> senderIds = messages.stream()
                 .map(Message::getSenderId)
@@ -68,10 +90,39 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
                 .collect(Collectors.toList());
             Map<Long, String> nameMap = userMapper.selectBatchIds(senderIds).stream()
                 .collect(Collectors.toMap(User::getId, User::getNickname, (a, b) -> a));
-            messages.forEach(m -> m.setSenderName(nameMap.get(m.getSenderId())));
+            Map<Long, User> friendMap = friendMapOf(messages);
+            messages.forEach(m -> {
+                m.setSenderName(nameMap.get(m.getSenderId()));
+                if (m.getType() != null && m.getType() == 1 && m.getExtra() != null) {
+                    try {
+                        Long fid = Long.valueOf(m.getExtra());
+                        User u = friendMap.get(fid);
+                        if (u != null) {
+                            m.setFriendUserId(fid);
+                            m.setFriendNickname(u.getNickname());
+                            m.setFriendAvatar(u.getAvatar());
+                            m.setFriendAccount(u.getAccount());
+                        }
+                    } catch (NumberFormatException ignored) { }
+                }
+            });
         }
 
         return Result.success(messages);
+    }
+
+    //收集好友推荐消息中extra对应的user
+    private Map<Long, User> friendMapOf(List<Message> messages) {
+        List<Long> friendUserIds = messages.stream()
+            .filter(m -> m.getType() != null && m.getType() == 1 && m.getExtra() != null)
+            .map(m -> Long.valueOf(m.getExtra()))
+            .distinct()
+            .collect(Collectors.toList());
+        if (friendUserIds.isEmpty()) {
+            return Map.of();
+        }
+        return userMapper.selectBatchIds(friendUserIds).stream()
+            .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
     }
 
     //判断用户是否在聊天室中

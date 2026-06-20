@@ -169,6 +169,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return Result.success("密码修改成功");
     }
 
+    //上传头像
     @Override
     public Result<User> uploadAvatar(Long userId, MultipartFile file) {
         if (file == null || file.isEmpty()) {

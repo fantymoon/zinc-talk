@@ -49,6 +49,8 @@ CREATE TABLE t_message (
     sender_id BIGINT NOT NULL COMMENT '发送者ID',
     room_id BIGINT NOT NULL COMMENT '聊天室ID',
     content TEXT NOT NULL COMMENT '消息内容',
+    type TINYINT NOT NULL DEFAULT 0 COMMENT '0文本 1好友推荐 2音乐分享',
+    extra VARCHAR(255) NULL COMMENT '附加数据',
     send_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
     INDEX idx_room_time (room_id, send_time)
 ) COMMENT '消息表';

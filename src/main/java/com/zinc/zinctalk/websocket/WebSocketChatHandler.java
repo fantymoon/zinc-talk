@@ -3,9 +3,11 @@ package com.zinc.zinctalk.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zinc.zinctalk.common.Result;
 import com.zinc.zinctalk.entity.ChatRoomMember;
+import com.zinc.zinctalk.entity.Friend;
 import com.zinc.zinctalk.entity.Message;
 import com.zinc.zinctalk.entity.User;
 import com.zinc.zinctalk.mapper.ChatRoomMemberMapper;
+import com.zinc.zinctalk.mapper.FriendMapper;
 import com.zinc.zinctalk.mapper.UserMapper;
 import com.zinc.zinctalk.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,9 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private FriendMapper friendMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -65,6 +70,10 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
                 Long roomId = Long.valueOf(req.get("roomId").toString());
                 String content = (String) req.get("content");
                 handleChatMessage(userId, account, roomId, content);
+            } else if ("share-friend".equals(type)) {
+                Long roomId = Long.valueOf(req.get("roomId").toString());
+                Long friendUserId = Long.valueOf(req.get("friendUserId").toString());
+                handleShareFriend(userId, account, roomId, friendUserId);
             }
         } catch (Exception e) {
             System.out.println("[WebSocket] 消息处理异常: " + e.getMessage());
@@ -93,6 +102,72 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
         resp.put("senderId", senderId);
         resp.put("senderName", senderName);
         resp.put("content", message.getContent());
+        resp.put("sendTime", message.getSendTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        String respJson = objectMapper.writeValueAsString(resp);
+
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ChatRoomMember> wrapper =
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        wrapper.eq(ChatRoomMember::getRoomId, roomId);
+        List<ChatRoomMember> members = chatRoomMemberMapper.selectList(wrapper);
+
+        for (ChatRoomMember member : members) {
+            WebSocketSession memberSession = sessions.get(member.getUserId());
+            if (memberSession != null && memberSession.isOpen()) {
+                memberSession.sendMessage(new TextMessage(respJson));
+            }
+        }
+    }
+
+    //好友推荐
+    private void handleShareFriend(Long senderId, String account, Long roomId, Long friendUserId) throws IOException {
+        if (friendUserId.equals(senderId)) {
+            WebSocketSession session = sessions.get(senderId);
+            if (session != null) sendToSession(session, Result.fail("不能推荐自己"));
+            return;
+        }
+
+        //校验被推荐人是发送者的好友
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Friend> fw =
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        fw.eq(Friend::getUserId, senderId)
+            .eq(Friend::getFriendId, friendUserId)
+            .eq(Friend::getStatus, 1);
+        Friend friend = friendMapper.selectOne(fw);
+        if (friend == null) {
+            WebSocketSession session = sessions.get(senderId);
+            if (session != null) sendToSession(session, Result.fail("只能推荐自己的好友"));
+            return;
+        }
+
+        User recommended = userMapper.selectById(friendUserId);
+        if (recommended == null) {
+            WebSocketSession session = sessions.get(senderId);
+            if (session != null) sendToSession(session, Result.fail("被推荐用户不存在"));
+            return;
+        }
+
+        Result<Message> result = messageService.saveShareMessage(senderId, roomId, 1, String.valueOf(friendUserId));
+        if (!result.getCode().equals(200)) {
+            WebSocketSession session = sessions.get(senderId);
+            if (session != null) sendToSession(session, result);
+            return;
+        }
+
+        Message message = result.getData();
+        User sender = userMapper.selectById(senderId);
+        String senderName = sender != null ? sender.getNickname() : account;
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("type", "share-friend");
+        resp.put("messageId", message.getId());
+        resp.put("roomId", roomId);
+        resp.put("senderId", senderId);
+        resp.put("senderName", senderName);
+        resp.put("friendUserId", friendUserId);
+        resp.put("friendNickname", recommended.getNickname());
+        resp.put("friendAvatar", recommended.getAvatar());
+        resp.put("friendAccount", recommended.getAccount());
         resp.put("sendTime", message.getSendTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
         String respJson = objectMapper.writeValueAsString(resp);

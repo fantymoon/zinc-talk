@@ -81,7 +81,7 @@ public class SonglistServiceImpl extends ServiceImpl<SonglistMapper, Songlist> i
             return Result.fail("不能删除别人的歌单");
         }
 
-        // 级联删除歌单下的所有歌曲（物理删除）
+        //级联删除歌单下的所有歌曲
         LambdaQueryWrapper<Song> songWrapper = new LambdaQueryWrapper<>();
         songWrapper.eq(Song::getSonglistId, songlistId);
         songMapper.delete(songWrapper);
