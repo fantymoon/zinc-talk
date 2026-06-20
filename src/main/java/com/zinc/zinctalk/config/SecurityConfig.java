@@ -23,7 +23,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())//前后端分离不需要CSRF保护
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/user/register", "/api/user/login", "/chat").permitAll()
+                .requestMatchers("/api/user/register", "/api/user/login", "/chat", "/uploads/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

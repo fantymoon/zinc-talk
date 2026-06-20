@@ -9,6 +9,15 @@ spring:
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB     
+      max-request-size: 50MB   
+
+#文件上传存储目录
+app:
+  upload-dir: ./uploads
 
 jwt:
   secret: zinc-talk-secret-key-2026-must-be-at-least-256-bits-long

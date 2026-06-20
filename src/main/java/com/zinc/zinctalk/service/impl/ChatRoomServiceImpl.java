@@ -106,6 +106,7 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
         return Result.success(room);
     }
 
+    //邀请
     @Override
     @Transactional
     public Result<String> inviteMembers(Long userId, Long roomId, List<Long> memberIds) {
