@@ -89,6 +89,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return Result.success(data);
     }
 
+    //获取用户信息
     @Override
     public Result<User> getUserInfo(Long userId) {
         User user = getById(userId);
@@ -97,6 +98,67 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         user.setPassword(null);
         return Result.success(user);
+    }
+
+    //更新用户信息
+    @Override
+    public Result<User> updateProfile(Long userId, User updateUser) {
+        User user = getById(userId);
+        if (user == null) {
+            return Result.fail("用户不存在");
+        }
+
+        if (updateUser.getNickname() == null || updateUser.getNickname().isEmpty()) {
+            return Result.fail("昵称不能为空");
+        }
+
+        if (updateUser.getSex() != null && !updateUser.getSex().isEmpty()) {
+            if (!updateUser.getSex().equals("男") && !updateUser.getSex().equals("女") && !updateUser.getSex().equals("保密")) {
+                return Result.fail("性别只能是 男、女 或 保密");
+            }
+            user.setSex(updateUser.getSex());
+        }
+
+        user.setNickname(updateUser.getNickname());
+        if (updateUser.getAvatar() != null) {
+            user.setAvatar(updateUser.getAvatar());
+        }
+        if (updateUser.getSelfIntroduction() != null) {
+            user.setSelfIntroduction(updateUser.getSelfIntroduction());
+        }
+
+        updateById(user);
+        user.setPassword(null);
+        return Result.success(user);
+    }
+
+    //更新密码
+    @Override
+    public Result<String> updatePassword(Long userId, String oldPassword, String newPassword) {
+        if (oldPassword == null || oldPassword.isEmpty()) {
+            return Result.fail("旧密码不能为空");
+        }
+        if (newPassword == null || newPassword.isEmpty()) {
+            return Result.fail("新密码不能为空");
+        }
+        if (newPassword.length() < 6) {
+            return Result.fail("新密码长度不能少于6位");
+        }
+        if (newPassword.equals(oldPassword)) {
+            return Result.fail("新密码不能与旧密码相同");
+        }
+
+        User user = getById(userId);
+        if (user == null) {
+            return Result.fail("用户不存在");
+        }
+        if (!user.getPassword().equals(oldPassword)) {
+            return Result.fail("旧密码错误");
+        }
+
+        user.setPassword(newPassword);
+        updateById(user);
+        return Result.success("密码修改成功");
     }
 
 }

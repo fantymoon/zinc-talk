@@ -7,16 +7,22 @@ import com.zinc.zinctalk.common.Result;
 import com.zinc.zinctalk.entity.ChatRoom;
 import com.zinc.zinctalk.entity.ChatRoomMember;
 import com.zinc.zinctalk.entity.Friend;
+import com.zinc.zinctalk.entity.User;
 import com.zinc.zinctalk.mapper.ChatRoomMapper;
 import com.zinc.zinctalk.mapper.ChatRoomMemberMapper;
 import com.zinc.zinctalk.mapper.FriendMapper;
+import com.zinc.zinctalk.mapper.UserMapper;
 import com.zinc.zinctalk.service.ChatRoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +33,9 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
 
     @Autowired
     private ChatRoomMemberMapper chatRoomMemberMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     @Transactional
@@ -147,6 +156,7 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
         return Result.success("邀请成功");
     }
 
+    //退出聊天室
     @Override
     @Transactional
     public Result<String> leaveGroup(Long userId, Long roomId) {
@@ -170,6 +180,7 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
         return Result.success("已退出群聊");
     }
 
+    //解散聊天室
     @Override
     @Transactional
     public Result<String> dissolveGroup(Long userId, Long roomId) {
@@ -191,6 +202,29 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
         return Result.success("群聊已解散");
     }
 
+    //更新聊天室信息
+    @Override
+    public Result<ChatRoom> updateGroupRoom(Long userId, Long roomId, String name) {
+        ChatRoom room = getById(roomId);
+        if (room == null || Boolean.TRUE.equals(room.getIsDeleted())) {
+            return Result.fail("群聊不存在");
+        }
+        if (!room.getOwnerId().equals(userId)) {
+            return Result.fail("只有群主可以修改群聊信息");
+        }
+        if (room.getType() != 2) {
+            return Result.fail("只有群聊可以修改信息");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            return Result.fail("群聊名称不能为空");
+        }
+
+        room.setName(name.trim());
+        updateById(room);
+        return Result.success(room);
+    }
+
+    //获取聊天室成员
     @Override
     public Result<List<ChatRoomMember>> getRoomMembers(Long userId, Long roomId) {
         if (!isRoomMember(roomId, userId)) {
@@ -201,9 +235,13 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
         wrapper.eq(ChatRoomMember::getRoomId, roomId)
             .eq(ChatRoomMember::getIsDeleted, 0);
         List<ChatRoomMember> members = chatRoomMemberMapper.selectList(wrapper);
+
+        fillMemberNicknames(members);
+
         return Result.success(members);
     }
 
+    //获取用户所有聊天室
     @Override
     public Result<List<ChatRoom>> getMyRooms(Long userId) {
         List<Long> roomIds = baseMapper.selectRoomIdsByUserId(userId);
@@ -216,9 +254,59 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
             .eq(ChatRoom::getIsDeleted, 0)
             .orderByDesc(ChatRoom::getCreateTime);
         List<ChatRoom> rooms = list(wrapper);
+
+        fillPrivatePeerNames(rooms, userId);
+
         return Result.success(rooms);
     }
 
+    //给私聊房间批量填充对方昵称
+    private void fillPrivatePeerNames(List<ChatRoom> rooms, Long userId) {
+        List<Long> privateRoomIds = rooms.stream()
+            .filter(r -> r.getType() != null && r.getType() == 1)
+            .map(ChatRoom::getId)
+            .collect(Collectors.toList());
+        if (privateRoomIds.isEmpty()) return;
+
+        LambdaQueryWrapper<ChatRoomMember> mw = new LambdaQueryWrapper<>();
+        mw.in(ChatRoomMember::getRoomId, privateRoomIds)
+            .eq(ChatRoomMember::getIsDeleted, 0);
+        List<ChatRoomMember> members = chatRoomMemberMapper.selectList(mw);
+
+        Map<Long, Long> roomPeerUserId = new HashMap<>();
+        for (ChatRoomMember m : members) {
+            if (!userId.equals(m.getUserId())) {
+                roomPeerUserId.put(m.getRoomId(), m.getUserId());
+            }
+        }
+        if (roomPeerUserId.isEmpty()) return;
+
+        List<Long> peerIds = new ArrayList<>(new HashSet<>(roomPeerUserId.values()));
+        Map<Long, String> nameMap = userMapper.selectBatchIds(peerIds).stream()
+            .collect(Collectors.toMap(User::getId, User::getNickname, (a, b) -> a));
+
+        for (ChatRoom room : rooms) {
+            Long peerId = roomPeerUserId.get(room.getId());
+            if (peerId != null) {
+                room.setPeerUserId(peerId);
+                room.setPeerName(nameMap.getOrDefault(peerId, "未知用户"));
+            }
+        }
+    }
+
+    //给成员列表批量填充昵称
+    private void fillMemberNicknames(List<ChatRoomMember> members) {
+        if (members == null || members.isEmpty()) return;
+        List<Long> ids = members.stream()
+            .map(ChatRoomMember::getUserId)
+            .distinct()
+            .collect(Collectors.toList());
+        Map<Long, String> nameMap = userMapper.selectBatchIds(ids).stream()
+            .collect(Collectors.toMap(User::getId, User::getNickname, (a, b) -> a));
+        members.forEach(m -> m.setNickname(nameMap.get(m.getUserId())));
+    }
+
+    //检查所有成员是否为好友
     private Result<String> checkAllAreFriends(Long userId, List<Long> memberIds) {
         LambdaQueryWrapper<Friend> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Friend::getUserId, userId)
@@ -239,6 +327,7 @@ public class ChatRoomServiceImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> i
         return null;
     }
 
+    //检查是否为聊天室成员
     private boolean isRoomMember(Long roomId, Long userId) {
         LambdaQueryWrapper<ChatRoomMember> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ChatRoomMember::getRoomId, roomId)

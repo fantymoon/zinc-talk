@@ -17,6 +17,7 @@ public class SonglistServiceImpl extends ServiceImpl<SonglistMapper, Songlist> i
     @Autowired
     private SonglistMapper songlistMapper;
 
+    //创建歌单
     @Override
     public Result<Songlist> createSonglist(Long userId, String name) {
         if (name == null || name.trim().isEmpty()) {
@@ -41,6 +42,7 @@ public class SonglistServiceImpl extends ServiceImpl<SonglistMapper, Songlist> i
         return Result.success(songlists);
     }
 
+    //更新歌单
     @Override
     public Result<String> updateSonglist(Long userId, Long songlistId, String name) {
         if (name == null || name.trim().isEmpty()) {
@@ -62,6 +64,7 @@ public class SonglistServiceImpl extends ServiceImpl<SonglistMapper, Songlist> i
         return Result.success("修改成功");
     }
 
+    //删除歌单
     @Override
     public Result<String> deleteSonglist(Long userId, Long songlistId) {
         Songlist songlist = getById(songlistId);

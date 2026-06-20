@@ -3,6 +3,7 @@ package com.zinc.zinctalk.entity;
 import java.time.LocalDateTime;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -18,4 +19,6 @@ public class Message {
     private LocalDateTime sendTime;
     private Long roomId;
 
+    @TableField(exist = false)
+    private String senderName;
 }

@@ -12,4 +12,5 @@ public interface SongService extends IService<Song> {
     Result<Song> getSongDetail(Long songId);
     Result<String> deleteSong(Long userId, Long songId);
     Result<List<Song>> getSonglistSongs(Long userId, Long songlistId);
+    Result<Song> updateSong(Long userId, Long songId, Song song);
 }

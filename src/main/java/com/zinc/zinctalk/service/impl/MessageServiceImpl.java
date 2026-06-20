@@ -5,14 +5,18 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zinc.zinctalk.common.Result;
 import com.zinc.zinctalk.entity.ChatRoomMember;
 import com.zinc.zinctalk.entity.Message;
+import com.zinc.zinctalk.entity.User;
 import com.zinc.zinctalk.mapper.ChatRoomMemberMapper;
 import com.zinc.zinctalk.mapper.MessageMapper;
+import com.zinc.zinctalk.mapper.UserMapper;
 import com.zinc.zinctalk.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> implements MessageService {
@@ -20,6 +24,10 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     @Autowired
     private ChatRoomMemberMapper chatRoomMemberMapper;
 
+    @Autowired
+    private UserMapper userMapper;
+
+    //保存消息
     @Override
     public Result<Message> saveMessage(Long senderId, Long roomId, String content) {
         if (content == null || content.trim().isEmpty()) {
@@ -40,6 +48,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         return Result.success(message);
     }
 
+    //获取历史消息
     @Override
     public Result<List<Message>> getHistoryMessages(Long roomId, Long userId) {
         if (!isRoomMember(roomId, userId)) {
@@ -51,9 +60,21 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
             .orderByAsc(Message::getSendTime);
         List<Message> messages = list(wrapper);
 
+        //批量填充发送者昵称
+        if (!messages.isEmpty()) {
+            List<Long> senderIds = messages.stream()
+                .map(Message::getSenderId)
+                .distinct()
+                .collect(Collectors.toList());
+            Map<Long, String> nameMap = userMapper.selectBatchIds(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getNickname, (a, b) -> a));
+            messages.forEach(m -> m.setSenderName(nameMap.get(m.getSenderId())));
+        }
+
         return Result.success(messages);
     }
 
+    //判断用户是否在聊天室中
     private boolean isRoomMember(Long roomId, Long userId) {
         LambdaQueryWrapper<ChatRoomMember> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ChatRoomMember::getRoomId, roomId)

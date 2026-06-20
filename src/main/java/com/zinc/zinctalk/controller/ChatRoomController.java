@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -71,6 +72,15 @@ public class ChatRoomController {
     public Result<List<ChatRoomMember>> getRoomMembers(@PathVariable Long roomId, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         return chatRoomService.getRoomMembers(userId, roomId);
+    }
+
+    @PutMapping("/room/{roomId}")
+    public Result<ChatRoom> updateGroupRoom(@PathVariable Long roomId,
+                                            @RequestBody Map<String, Object> params,
+                                            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        String name = (String) params.get("name");
+        return chatRoomService.updateGroupRoom(userId, roomId, name);
     }
 
     @GetMapping("/room/list")

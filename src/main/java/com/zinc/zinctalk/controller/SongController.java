@@ -83,6 +83,15 @@ public class SongController {
         return songService.deleteSong(userId, songId);
     }
 
+    //修改歌曲信息
+    @PutMapping("/{songId}")
+    public Result<Song> updateSong(@PathVariable Long songId,
+                                   @RequestBody Song song,
+                                   HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return songService.updateSong(userId, songId, song);
+    }
+
     //获取歌单里的歌曲列表
     @GetMapping("/list/{songlistId}")
     public Result<List<Song>> getSonglistSongs(@PathVariable Long songlistId, HttpServletRequest request) {

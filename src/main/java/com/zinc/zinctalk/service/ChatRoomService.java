@@ -21,4 +21,6 @@ public interface ChatRoomService extends IService<ChatRoom> {
     Result<List<ChatRoomMember>> getRoomMembers(Long userId, Long roomId);
 
     Result<List<ChatRoom>> getMyRooms(Long userId);
+
+    Result<ChatRoom> updateGroupRoom(Long userId, Long roomId, String name);
 }

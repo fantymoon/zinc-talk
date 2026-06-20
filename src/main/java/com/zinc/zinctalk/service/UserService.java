@@ -14,4 +14,9 @@ public interface UserService extends IService<User> {
     Result<Map<String, Object>> login(String account, String password);
 
     Result<User> getUserInfo(Long userId);
+
+    Result<User> updateProfile(Long userId, User user);
+
+    Result<String> updatePassword(Long userId, String oldPassword, String newPassword);
+
 }

@@ -22,6 +22,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
     @Autowired
     private SonglistMapper songlistMapper;
 
+    //上传
     @Override
     public Result<Song> uploadSong(Long userId, Long songlistId, String name,
                                    String artist, Integer duration, String url) {
@@ -53,6 +54,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         return Result.success(song);
     }
 
+    //获取歌曲信息
     @Override
     public Result<Song> getSongDetail(Long songId) {
         Song song = getById(songId);
@@ -62,6 +64,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         return Result.success(song);
     }
 
+    //删除歌曲
     @Override
     public Result<String> deleteSong(Long userId, Long songId) {
         Song song = getById(songId);
@@ -79,6 +82,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         return Result.success("删除成功");
     }
 
+    //获取歌单下的所有歌曲
     @Override
     public Result<List<Song>> getSonglistSongs(Long userId, Long songlistId) {
         Songlist songlist = songlistMapper.selectById(songlistId);
@@ -92,5 +96,34 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         List<Song> songs = list(wrapper);
 
         return Result.success(songs);
+    }
+
+    //更新歌曲
+    @Override
+    public Result<Song> updateSong(Long userId, Long songId, Song updateSong) {
+        Song song = getById(songId);
+        if (song == null) {
+            return Result.fail("歌曲不存在");
+        }
+
+        Songlist songlist = songlistMapper.selectById(song.getSonglistId());
+        if (songlist == null || !songlist.getOwnerId().equals(userId)) {
+            return Result.fail("不能修改别人歌单里的歌曲");
+        }
+
+        if (updateSong.getName() == null || updateSong.getName().trim().isEmpty()) {
+            return Result.fail("歌曲名不能为空");
+        }
+
+        song.setName(updateSong.getName().trim());
+        if (updateSong.getArtist() != null) {
+            song.setArtist(updateSong.getArtist().trim());
+        }
+        if (updateSong.getDuration() != null) {
+            song.setDuration(updateSong.getDuration());
+        }
+
+        updateById(song);
+        return Result.success(song);
     }
 }
