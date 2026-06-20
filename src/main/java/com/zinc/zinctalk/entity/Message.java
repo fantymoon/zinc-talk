@@ -33,4 +33,16 @@ public class Message {
     private String friendAvatar;
     @TableField(exist = false)
     private String friendAccount;
+
+    //音乐分享卡片的展示信息
+    @TableField(exist = false)
+    private Long songId;
+    @TableField(exist = false)
+    private String songName;
+    @TableField(exist = false)
+    private String songArtist;
+    @TableField(exist = false)
+    private String songUrl;
+    @TableField(exist = false)
+    private Integer songDuration;
 }

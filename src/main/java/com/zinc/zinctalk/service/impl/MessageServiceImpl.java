@@ -2,6 +2,8 @@ package com.zinc.zinctalk.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zinc.zinctalk.common.Result;
 import com.zinc.zinctalk.entity.ChatRoomMember;
 import com.zinc.zinctalk.entity.Message;
@@ -26,6 +28,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
     @Autowired
     private UserMapper userMapper;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     //保存消息
     @Override
@@ -104,6 +108,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
                             m.setFriendAccount(u.getAccount());
                         }
                     } catch (NumberFormatException ignored) { }
+                } else if (m.getType() != null && m.getType() == 2 && m.getExtra() != null) {
+                    fillSongCard(m);
                 }
             });
         }
@@ -124,6 +130,19 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         return userMapper.selectBatchIds(friendUserIds).stream()
             .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
     }
+
+    //从extra填充音乐分享卡片展示字段
+    private void fillSongCard(Message m) {
+        try {
+            JsonNode node = objectMapper.readTree(m.getExtra());
+            if (node.hasNonNull("songId")) m.setSongId(node.get("songId").asLong());
+            if (node.hasNonNull("name")) m.setSongName(node.get("name").asText());
+            if (node.hasNonNull("artist")) m.setSongArtist(node.get("artist").asText());
+            if (node.hasNonNull("url")) m.setSongUrl(node.get("url").asText());
+            if (node.hasNonNull("duration")) m.setSongDuration(node.get("duration").asInt());
+        } catch (Exception ignored) { }
+    }
+
 
     //判断用户是否在聊天室中
     private boolean isRoomMember(Long roomId, Long userId) {

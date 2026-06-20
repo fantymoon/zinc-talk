@@ -5,9 +5,11 @@ import com.zinc.zinctalk.common.Result;
 import com.zinc.zinctalk.entity.ChatRoomMember;
 import com.zinc.zinctalk.entity.Friend;
 import com.zinc.zinctalk.entity.Message;
+import com.zinc.zinctalk.entity.Song;
 import com.zinc.zinctalk.entity.User;
 import com.zinc.zinctalk.mapper.ChatRoomMemberMapper;
 import com.zinc.zinctalk.mapper.FriendMapper;
+import com.zinc.zinctalk.mapper.SongMapper;
 import com.zinc.zinctalk.mapper.UserMapper;
 import com.zinc.zinctalk.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,9 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 
     @Autowired
     private FriendMapper friendMapper;
+
+    @Autowired
+    private SongMapper songMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -74,6 +79,10 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
                 Long roomId = Long.valueOf(req.get("roomId").toString());
                 Long friendUserId = Long.valueOf(req.get("friendUserId").toString());
                 handleShareFriend(userId, account, roomId, friendUserId);
+            } else if ("share-music".equals(type)) {
+                Long roomId = Long.valueOf(req.get("roomId").toString());
+                Long songId = Long.valueOf(req.get("songId").toString());
+                handleShareMusic(userId, account, roomId, songId);
             }
         } catch (Exception e) {
             System.out.println("[WebSocket] 消息处理异常: " + e.getMessage());
@@ -168,6 +177,63 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
         resp.put("friendNickname", recommended.getNickname());
         resp.put("friendAvatar", recommended.getAvatar());
         resp.put("friendAccount", recommended.getAccount());
+        resp.put("sendTime", message.getSendTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        String respJson = objectMapper.writeValueAsString(resp);
+
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ChatRoomMember> wrapper =
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        wrapper.eq(ChatRoomMember::getRoomId, roomId);
+        List<ChatRoomMember> members = chatRoomMemberMapper.selectList(wrapper);
+
+        for (ChatRoomMember member : members) {
+            WebSocketSession memberSession = sessions.get(member.getUserId());
+            if (memberSession != null && memberSession.isOpen()) {
+                memberSession.sendMessage(new TextMessage(respJson));
+            }
+        }
+    }
+
+    //音乐分享
+    private void handleShareMusic(Long senderId, String account, Long roomId, Long songId) throws IOException {
+        Song song = songMapper.selectById(songId);
+        if (song == null) {
+            WebSocketSession session = sessions.get(senderId);
+            if (session != null) sendToSession(session, Result.fail("歌曲不存在"));
+            return;
+        }
+
+        //存一份歌曲快照进extra 发送者删歌后好友仍可试听或保存
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("songId", song.getId());
+        snapshot.put("name", song.getName());
+        snapshot.put("artist", song.getArtist());
+        snapshot.put("url", song.getUrl());
+        snapshot.put("duration", song.getDuration());
+        String extraJson = objectMapper.writeValueAsString(snapshot);
+
+        Result<Message> result = messageService.saveShareMessage(senderId, roomId, 2, extraJson);
+        if (!result.getCode().equals(200)) {
+            WebSocketSession session = sessions.get(senderId);
+            if (session != null) sendToSession(session, result);
+            return;
+        }
+
+        Message message = result.getData();
+        User sender = userMapper.selectById(senderId);
+        String senderName = sender != null ? sender.getNickname() : account;
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("type", "share-music");
+        resp.put("messageId", message.getId());
+        resp.put("roomId", roomId);
+        resp.put("senderId", senderId);
+        resp.put("senderName", senderName);
+        resp.put("songId", song.getId());
+        resp.put("songName", song.getName());
+        resp.put("songArtist", song.getArtist());
+        resp.put("songUrl", song.getUrl());
+        resp.put("songDuration", song.getDuration());
         resp.put("sendTime", message.getSendTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
         String respJson = objectMapper.writeValueAsString(resp);

@@ -76,6 +76,34 @@ public class SongController {
         return songService.getSongDetail(songId);
     }
 
+    //保存分享来的歌曲到自己的歌单
+    @PostMapping("/share")
+    public Result<Song> saveSharedSong(@RequestBody ShareSongRequest body, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return songService.saveSharedSong(userId, body.getSonglistId(),
+            body.getName(), body.getArtist(), body.getDuration(), body.getUrl());
+    }
+
+    //分享歌曲的请求体
+    public static class ShareSongRequest {
+        private Long songlistId;
+        private String name;
+        private String artist;
+        private Integer duration;
+        private String url;
+
+        public Long getSonglistId() { return songlistId; }
+        public void setSonglistId(Long songlistId) { this.songlistId = songlistId; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getArtist() { return artist; }
+        public void setArtist(String artist) { this.artist = artist; }
+        public Integer getDuration() { return duration; }
+        public void setDuration(Integer duration) { this.duration = duration; }
+        public String getUrl() { return url; }
+        public void setUrl(String url) { this.url = url; }
+    }
+
     //删除歌曲
     @DeleteMapping("/{songId}")
     public Result<String> deleteSong(@PathVariable Long songId, HttpServletRequest request) {
